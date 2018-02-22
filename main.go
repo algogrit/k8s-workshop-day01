@@ -8,11 +8,11 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/tarkalabs/k8s-workshop-day01/src/controllers"
 )
 
 var kubeconfig string
@@ -48,26 +48,8 @@ func main() {
 
 	informerFactory := informers.NewSharedInformerFactory(clientSet, 10*time.Second)
 
-	podInformer := informerFactory.Core().V1().Pods().Informer()
-	podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			if pod, ok := obj.(*corev1.Pod); ok {
-				log.Infof("Added a pod : %s", pod.Name)
-			}
-		},
-		UpdateFunc: func(oldObj, newObj interface{}) {
-			if pod, ok := newObj.(*corev1.Pod); ok {
-				log.Infof("Updated a pod : %s", pod.Name)
-			}
-		},
-		DeleteFunc: func(obj interface{}) {
-			if pod, ok := obj.(*corev1.Pod); ok {
-				log.Infof("deleted a pod : %s", pod.Name)
-			} else {
-				log.Infof("Could not type cast... probably go deleted")
-			}
-		},
-	})
+	podInformer := informerFactory.Core().V1().Pods()
+	controller.NewController(podInformer).Run()
 
 	log.Infof("Successfully connected to kubernetes %#v", clientSet)
 
